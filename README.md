@@ -28,8 +28,9 @@ If you want to do some wireless maintenance you'll need to configure the ssh ser
 ##Printed Parts
 You can download all the **STL** files if you want to print our design or make your own.
 The files are: 
-* Bottom Cover.stl
-* Upper Cover.stl
+* Box.stl
+* Top Box.stl
+* USB Fixer.stl
 
 
 ##Milestones
