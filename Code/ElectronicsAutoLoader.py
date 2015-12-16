@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 #Electronics Auto Loader - Enric Gómez Pitarch & Marc Cobler
 #BCN3D Technologies - Fundacio CIM
 #
