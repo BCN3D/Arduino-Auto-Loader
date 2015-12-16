@@ -208,7 +208,10 @@ def main():
 	manageInputs()
 	startUpLEDS()
 	#Callback function in PIN 24. Whenever a Falling Edge is detected, run the checkButtons Function
-	GPIO.add_event_detect(24, GPIO.FALLING, callback=checkButtons, bouncetime=300)                                        
+	GPIO.add_event_detect(24, GPIO.FALLING, callback=checkButtons, bouncetime=300)  
+	while True:
+		time.sleep(2)
+		print "Waiting for the load button..."                                     
 
 #Just the regular boilerplate to start the program
 if __name__ == '__main__':
