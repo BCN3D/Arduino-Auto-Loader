@@ -31,7 +31,7 @@ import socket
 repoPath = "/home/pi/arduino-auto-loader"
 BCN3DPlusPath = ('/home/pi/arduino-auto-loader/Code/files/BCN3D_v3_0_2x01.hex')
 BCN3DRPath = ('/home/pi/arduino-auto-loader/Code/files/BCN3DR_v1_1.hex')
-#BCN3DSigmaPath = ('/home/pi/BCN3D-Updater/Marlin.hex')
+#BCN3DSigmaPath = ('/home/pi/arduino-auto-loader/Code/files/v01-1.1.4.hex')
 
 def haveInternet():
 	REMOTE_SERVER = "www.google.com"
@@ -53,7 +53,7 @@ def syncGithub():
 			os.chdir(repoPath)
 			currentDirectory = os.getcwd()
 			print "the current directory is: %s" % currentDirectory
-			os.system("git pull")
+			os.system("git pull master")
 		except:
 			print "Something went wrong, check you internet connection"
 			pass
@@ -115,8 +115,8 @@ def startUpLEDS():
 	     print "."
 	     GPIO.output(12, GPIO.LOW)
 	     GPIO.output(11, GPIO.LOW)
-     	 time.sleep(0.1)
-     	 print "."
+	     time.sleep(0.1)
+	     print "."
 
 def loadFirmware(firmware):
 	print "Loading " + str(firmware) + " to port 0" 
@@ -161,53 +161,57 @@ def loadFirmware(firmware):
 	GPIO.output(5, GPIO.LOW)	
 	GPIO.output(11, GPIO.LOW)
 
+def checkButtons(channel):
+	#Read the status of the switches and buttons
+	try:
+		print "Reading the inputs..."
+		input_state_24 = GPIO.input(24) #Load Button
+		input_state_17 = GPIO.input(17) #Interruptor 1 - BCN3D+
+		input_state_27 = GPIO.input(27) #Interruptor 2 - BCN3DR
+		input_state_22 = GPIO.input(22) #Interruptor 3 - BCN3DSigma
+		input_state_23 = GPIO.input(23) #Interruptor 4 - Unused
+		if input_state_17 == False and input_state_27 == True and input_state_22 == True and input_state_23 == True:
+			#Interruptor 1 pressed, Loading BCN3D+ firmware
+			loadFirmware(BCN3DPlusPath)				
+						   
+		if input_state_27 == False and input_state_17 == True and input_state_22 == True and input_state_23 == True:
+			#Interruptor 2 pressed, Loading BCN3DR firmware
+			loadFirmware(BCN3DRPath)
+
+		if input_state_22 == False and input_state_27 == True and input_state_17 == True and input_state_23 == True:
+			#Interruptor 3 pressed, Loading BCN3DSigma firmware
+			loadFirmware(BCN3DSigmaPath)
+													
+		#If switches 1,2,3 are selected and the load button pressed --> REBOOT
+		if input_state_24 == False and input_state_27 == False and input_state_17 == False and input_state_22 == False:
+			print 'Rebooting...'
+			startUpLEDS()
+			os.system("sudo reboot")
+		#If switches 1,2,4 are selected and the load button pressed --> SHUTDOWN
+		if input_state_24 == False and input_state_27 == False and input_state_17 == False and input_state_23 == False:
+			print 'Powering off the system...'
+			startUpLEDS()
+			os.system("sudo poweroff")
+			
+	except KeyboardInterrupt:
+		print "program closed by user"
+		GPIO.cleanup()
+		sys.exit()
+	except:
+		print "Other error or exception ocurred!"
+		GPIO.cleanup()
+		sys.exit()  
+    
 #Main program
 def main():
 	syncGithub()
 	manageInputs()
 	startUpLEDS()
-	#LOOP
+	#Callback function in PIN 24. Whenever a Falling Edge is detected, run the checkButtons Function
+	GPIO.add_event_detect(24, GPIO.FALLING, callback=checkButtons, bouncetime=300)  
 	while True:
-                try:
-                        #Read the status of the switches and buttons
-                        #print "Reading the inputs..."
-                        input_state_24 = GPIO.input(24) #Load Button
-                        input_state_17 = GPIO.input(17) #Interruptor 1 - BCN3D+
-                        input_state_27 = GPIO.input(27) #Interruptor 2 - BCN3DR
-                        input_state_22 = GPIO.input(22) #Interruptor 3 - BCN3DSigma
-                        input_state_23 = GPIO.input(23) #Interruptor 4 - Unused
-                        if input_state_24 == False: 
-                        
-                                if input_state_17 == False and input_state_27 == True and input_state_22 == True and input_state_23 == True:
-                                        #Interruptor 1 pressed, Loading BCN3D+ firmware
-                                        loadFirmware(BCN3DPlusPath)				
-                        
-                                if input_state_27 == False and input_state_17 == True and input_state_22 == True and input_state_23 == True:
-                                        #Interruptor 2 pressed, Loading BCN3DR firmware
-                                        loadFirmware(BCN3DRPath)
-
-                                if input_state_22 == False and input_state_27 == True and input_state_17 == True and input_state_23 == True:
-                                        #Interruptor 3 pressed, Loading BCN3DSigma firmware
-                                        loadFirmware(BCN3DSigmaPath)
-                                                
-                                #If switches 1,2,3 are selected and the load button pressed --> REBOOT
-                                if input_state_24 == False and input_state_27 == False and input_state_17 == False and input_state_22 == False:
-                                        print 'Rebooting...'
-                                        startUpLEDS()
-                                        os.system("sudo reboot")
-                                #If switches 1,2,4 are selected and the load button pressed --> SHUTDOWN
-                                if input_state_24 == False and input_state_27 == False and input_state_17 == False and input_state_23 == False:
-                                        print 'Powering off the system...'
-                                        startUpLEDS()
-                                        os.system("sudo poweroff")
-                except KeyboardInterrupt:
-                        print "program closed by user"
-                        GPIO.cleanup()
-                        sys.exit()
-                except:
-                        print "Other error or exception ocurred!"
-                        GPIO.cleanup()
-                        sys.exit()                        
+		time.sleep(2)
+		print "Waiting for the load button..."                                     
 
 #Just the regular boilerplate to start the program
 if __name__ == '__main__':
